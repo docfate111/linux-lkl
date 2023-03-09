@@ -1959,7 +1959,8 @@ existing-targets := $(wildcard $(sort $(targets)))
 endif # config-build
 endif # mixed-build
 endif # need-sub-make
-
+CFLAGS += -fsanitize=fuzzer
+LDFLAGS += -fsanitize=fuzzer
 PHONY += FORCE
 FORCE:
 

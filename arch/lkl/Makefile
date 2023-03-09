@@ -1,3 +1,4 @@
+include arch/lkl/auto.conf
 # SPDX-License-Identifier: GPL-2.0
 
 KBUILD_CFLAGS += -fno-builtin
@@ -63,18 +64,20 @@ endif
 core-y += arch/lkl/kernel/
 core-y += arch/lkl/mm/
 core-y += arch/lkl/drivers/
+core-y += arch/lkl/fuzz/
 
 all: lkl.o arch/lkl/include/generated/uapi/asm/syscall_defs.h
 
 lkl.o: vmlinux
-	$(OBJCOPY) $(if $(KEEP_EH_FRAMES),,-R .eh_frame) -R .syscall_defs $(foreach sym,$(LKL_ENTRY_POINTS),-G$(prefix)$(sym)) --prefix-symbols=$(prefix) vmlinux lkl.o
+	python prep_exports.py System.map > lkl_mod_exports
+	$(OBJCOPY) $(if $(KEEP_EH_FRAMES),,-R .eh_frame) -R .syscall_defs $(foreach sym,$(LKL_ENTRY_POINTS),-G$(prefix)$(sym)) --prefix-symbols=$(prefix) --keep-global-symbols=lkl_mod_exports vmlinux lkl.o
 
 arch/lkl/include/generated/uapi/asm/syscall_defs.h: vmlinux
 	$(OBJCOPY) -j .syscall_defs -O binary --set-section-flags .syscall_defs=alloc $< $@
 	$(Q) export tmpfile=$(shell mktemp); \
 	sed 's/\x0//g' $@ > $$tmpfile; mv $$tmpfile $@ ; rm -f $$tmpfile
 
-install: scripts_unifdef
+install: scripts_unifdef lkl.o headers arch/lkl/include/generated/uapi/asm/syscall_defs.h
 	@echo "  INSTALL	$(INSTALL_PATH)/lib/lkl.o"
 	@mkdir -p $(INSTALL_PATH)/lib/
 	@cp lkl.o $(INSTALL_PATH)/lib/
