@@ -1,0 +1,2 @@
+test-fuzzer-y += test-fuzzer.o
+CFLAGS_test-fuzzer.o += -O0
